@@ -7,8 +7,7 @@ plugins {
 }
 
 dependencies {
-    implementation("org.apache.commons:commons-text")
-    implementation(project(":utilities"))
+    implementation(project(":transforms"))
 }
 
 //application {
@@ -18,6 +17,8 @@ dependencies {
 val appName = "hello"
 val charPool : List<Char> = ('a'..'z') + ('0'..'9')
 var stringLength=10
+val googleCloudSecretName: String by project
+val googleCloudProjectName: String by project
 
 val randomString = (1..stringLength)
     .map { kotlin.random.Random.nextInt(0, charPool.size) }
@@ -32,9 +33,10 @@ var dataflowBaseArgs = mutableListOf(
     "--runner=DataflowRunner"
 )
 var jobArgs = mutableListOf(
-    "--project=opsbae-jd",
-    "--tempLocation=gs://opsbae-jd-temp/dataflow",
-    "--jobName=$appName-$randomString"
+    "--project=$googleCloudProjectName",
+    "--tempLocation=gs://$googleCloudProjectName-temp/dataflow",
+    "--jobName=$appName-$randomString",
+    "--secretName=$googleCloudSecretName"
 )
 
 var dataflowArgs = jobArgs.toMutableList()
@@ -44,10 +46,17 @@ task("local", JavaExec::class){
     group = "application"
     mainClass.set("com.google.looker.app.App")
     classpath = sourceSets["main"].runtimeClasspath
+    args = jobArgs
 }
 task("dataflow", JavaExec::class){
     group = "application"
     mainClass.set("com.google.looker.app.App")
     classpath = sourceSets["main"].runtimeClasspath
     args = dataflowArgs
+}
+task("localHelp", JavaExec::class) {
+    group = "help"
+    mainClass.set("com.google.looker.app.App")
+    classpath = sourceSets["main"].runtimeClasspath
+    args = listOf("--help=org.apache.beam.sdk.extensions.gcp.options.GcpOptions")
 }

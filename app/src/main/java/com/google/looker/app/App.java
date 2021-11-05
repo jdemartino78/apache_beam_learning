@@ -4,32 +4,42 @@
 package com.google.looker.app;
 
 
+import com.google.looker.ApiException;
+import com.google.looker.beam.io.Folders;
+import com.google.looker.beam.transforms.Log;
+import com.google.looker.model.Folder;
+import java.io.IOException;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
+import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.transforms.Create;
-import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.values.PCollection;
 
 public class App {
-
   public static interface Options extends PipelineOptions {
+    @Description("Google Cloud Secret Name")
+    public ValueProvider<String> getSecretName();
+    public void setSecretName(ValueProvider<String> secretName);
 
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException, ApiException {
     Options opts = PipelineOptionsFactory.fromArgs(args).as(Options.class);
+    GcpOptions gcpOptions = opts.as(GcpOptions.class);
     Pipeline pipeline = Pipeline.create(opts);
-    PCollection<Integer> col = pipeline.apply("firstgo", Create.of(1, 2, 3));
-    col.apply(
-        ParDo.of(new DoFn<Integer, Void>() {
-          @ProcessElement
-          public void process(ProcessContext ctx) {
-            System.out.println(ctx.element());
-          }
-        })
-    );
+    PCollection<Folder> folders = pipeline.apply(Folders.read(gcpOptions.getProject(), opts.getSecretName().get()));
+    folders.apply(Log.info("folders"));
+    // PCollection<Integer> col = pipeline.apply("firstgo", Create.of(1, 2, 3));
+    // col.apply(
+    //     ParDo.of(new DoFn<Integer, Void>() {
+    //       @ProcessElement
+    //       public void process(ProcessContext ctx) {
+    //         System.out.println(ctx.element());
+    //       }
+    //     })
+    // );
     pipeline.run();
 
   }

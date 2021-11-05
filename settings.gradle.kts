@@ -8,4 +8,5 @@
  */
 
 rootProject.name = "looker-sd-java"
-include("app", "list", "utilities")
+include("app")
+include("transforms")
